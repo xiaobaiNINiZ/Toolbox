@@ -39,33 +39,161 @@ TEMPLATE_CONFIG_FILE = "templates.json"
 class ToolboxApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("工具箱")
-        self.root.geometry("750x600")
+        self.root.title("🧰 工具箱 Toolbox")
+        self.root.geometry("900x700")
+        self.root.minsize(800, 600)
         self.root.resizable(True, True)
         
+        # 配置现代化主题和样式
+        self.setup_styles()
+        
+        # 设置窗口背景色
+        self.root.configure(bg='#f5f5f5')
+        
         # 创建标签页
-        self.notebook = ttk.Notebook(root)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.notebook = ttk.Notebook(root, style='Custom.TNotebook')
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=12, pady=12)
         
         # 功能1：视频批量重命名
-        self.tab1 = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab1, text="视频批量重命名")
+        self.tab1 = ttk.Frame(self.notebook, style='Card.TFrame')
+        self.notebook.add(self.tab1, text="  📹 视频批量重命名  ")
         self.setup_video_rename_tab()
         
         # 功能2：筛选未绑账户
-        self.tab2 = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab2, text="筛选未绑账户")
+        self.tab2 = ttk.Frame(self.notebook, style='Card.TFrame')
+        self.notebook.add(self.tab2, text="  🔍 筛选未绑账户  ")
         self.setup_filter_account_tab()
         
         # 功能3：模板自动填写
-        self.tab3 = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab3, text="模板自动填写")
+        self.tab3 = ttk.Frame(self.notebook, style='Card.TFrame')
+        self.notebook.add(self.tab3, text="  📝 模板自动填写  ")
         self.setup_template_fill_tab()
         
         # 功能4：数值转换
-        self.tab4 = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab4, text="数值转换")
+        self.tab4 = ttk.Frame(self.notebook, style='Card.TFrame')
+        self.notebook.add(self.tab4, text="  🔢 数值转换  ")
         self.setup_value_convert_tab()
+    
+    def setup_styles(self):
+        """配置现代化UI样式"""
+        style = ttk.Style()
+        
+        # 使用clam主题作为基础（更现代）
+        style.theme_use('clam')
+        
+        # 主背景色
+        bg_color = '#f5f5f5'
+        card_bg = '#ffffff'
+        accent_color = '#1976D2'
+        accent_hover = '#1565C0'
+        success_color = '#43A047'
+        danger_color = '#E53935'
+        
+        # Notebook样式
+        style.configure('Custom.TNotebook', background=bg_color, borderwidth=0)
+        style.configure('Custom.TNotebook.Tab',
+                       background='#e0e0e0',
+                       foreground='#424242',
+                       padding=[20, 10],
+                       font=('微软雅黑', 10))
+        style.map('Custom.TNotebook.Tab',
+                 background=[('selected', card_bg)],
+                 foreground=[('selected', accent_color)])
+        
+        # Frame样式
+        style.configure('Card.TFrame', background=card_bg)
+        style.configure('Main.TFrame', background=bg_color)
+        
+        # Label样式
+        style.configure('Title.TLabel',
+                       background=card_bg,
+                       foreground='#212121',
+                       font=('微软雅黑', 11, 'bold'))
+        style.configure('Card.TLabel',
+                       background=card_bg,
+                       foreground='#424242',
+                       font=('微软雅黑', 10))
+        style.configure('Hint.TLabel',
+                       background=card_bg,
+                       foreground='#757575',
+                       font=('微软雅黑', 9))
+        style.configure('Success.TLabel',
+                       background=card_bg,
+                       foreground=success_color,
+                       font=('微软雅黑', 10, 'bold'))
+        
+        # Button样式 - 主要按钮
+        style.configure('Primary.TButton',
+                       background=accent_color,
+                       foreground='white',
+                       borderwidth=0,
+                       focuscolor='none',
+                       padding=[15, 8],
+                       font=('微软雅黑', 10))
+        style.map('Primary.TButton',
+                 background=[('active', accent_hover), ('pressed', accent_hover)])
+        
+        # Button样式 - 次要按钮
+        style.configure('Secondary.TButton',
+                       background='#e0e0e0',
+                       foreground='#424242',
+                       borderwidth=0,
+                       focuscolor='none',
+                       padding=[15, 8],
+                       font=('微软雅黑', 10))
+        style.map('Secondary.TButton',
+                 background=[('active', '#bdbdbd'), ('pressed', '#9e9e9e')])
+        
+        # Button样式 - 成功按钮
+        style.configure('Success.TButton',
+                       background=success_color,
+                       foreground='white',
+                       borderwidth=0,
+                       focuscolor='none',
+                       padding=[15, 8],
+                       font=('微软雅黑', 10))
+        style.map('Success.TButton',
+                 background=[('active', '#2E7D32'), ('pressed', '#2E7D32')])
+        
+        # Button样式 - 危险按钮
+        style.configure('Danger.TButton',
+                       background=danger_color,
+                       foreground='white',
+                       borderwidth=0,
+                       focuscolor='none',
+                       padding=[15, 8],
+                       font=('微软雅黑', 10))
+        style.map('Danger.TButton',
+                 background=[('active', '#C62828'), ('pressed', '#C62828')])
+        
+        # LabelFrame样式
+        style.configure('Card.TLabelframe',
+                       background=card_bg,
+                       borderwidth=1,
+                       relief='solid')
+        style.configure('Card.TLabelframe.Label',
+                       background=card_bg,
+                       foreground=accent_color,
+                       font=('微软雅黑', 10, 'bold'))
+        
+        # Entry样式
+        style.configure('Custom.TEntry',
+                       fieldbackground='white',
+                       borderwidth=1,
+                       relief='solid',
+                       padding=5)
+        
+        # Radiobutton样式
+        style.configure('Custom.TRadiobutton',
+                       background=card_bg,
+                       foreground='#424242',
+                       font=('微软雅黑', 10))
+        
+        # Checkbutton样式
+        style.configure('Custom.TCheckbutton',
+                       background=card_bg,
+                       foreground='#424242',
+                       font=('微软雅黑', 10))
     
     def paste_path(self, textvariable):
         """粘贴路径到输入框"""
@@ -80,7 +208,7 @@ class ToolboxApp:
     
     def setup_video_rename_tab(self):
         """设置视频重命名标签页"""
-        main_frame = ttk.Frame(self.tab1, padding="10")
+        main_frame = ttk.Frame(self.tab1, padding="15", style='Card.TFrame')
         main_frame.pack(fill=tk.BOTH, expand=True)
         
         self.original_xlsx_path = tk.StringVar()  # 原始表格路径
@@ -91,60 +219,63 @@ class ToolboxApp:
         self.video_files = []  # 实际扫描到的视频文件
         self.process_type = tk.StringVar(value="抖音")  # 整理方式：抖音/视频号
         
-        # 第0行：整理方式选择
-        row0 = ttk.Frame(main_frame)
-        row0.pack(fill=tk.X, pady=5)
-        ttk.Label(row0, text="整理方式：").pack(side=tk.LEFT)
-        ttk.Radiobutton(row0, text="抖音", variable=self.process_type, value="抖音").pack(side=tk.LEFT, padx=10)
-        ttk.Radiobutton(row0, text="视频号", variable=self.process_type, value="视频号").pack(side=tk.LEFT, padx=10)
+        # 标题
+        ttk.Label(main_frame, text="视频批量重命名工具", style='Title.TLabel').pack(anchor='w', pady=(0, 10))
         
-        # 第1行：原始表格
-        row1 = ttk.Frame(main_frame)
+        # 整理方式选择
+        row0 = ttk.Frame(main_frame, style='Card.TFrame')
+        row0.pack(fill=tk.X, pady=5)
+        ttk.Label(row0, text="整理方式：", style='Card.TLabel').pack(side=tk.LEFT)
+        ttk.Radiobutton(row0, text="抖音", variable=self.process_type, value="抖音", style='Custom.TRadiobutton').pack(side=tk.LEFT, padx=10)
+        ttk.Radiobutton(row0, text="视频号", variable=self.process_type, value="视频号", style='Custom.TRadiobutton').pack(side=tk.LEFT, padx=10)
+        
+        # 原始表格区域
+        row1 = ttk.Frame(main_frame, style='Card.TFrame')
         row1.pack(fill=tk.X, pady=5)
-        ttk.Label(row1, text="原始表格：").pack(side=tk.LEFT)
-        entry1 = tk.Entry(row1, textvariable=self.original_xlsx_path, width=50)
-        entry1.pack(side=tk.LEFT, padx=5)
+        ttk.Label(row1, text="原始表格：", style='Card.TLabel', width=12).pack(side=tk.LEFT)
+        entry1 = tk.Entry(row1, textvariable=self.original_xlsx_path, width=55, font=('微软雅黑', 9), relief='solid', bd=1)
+        entry1.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         entry1.bind('<Double-Button-1>', lambda e: self.paste_path(self.original_xlsx_path))
-        ttk.Button(row1, text="选择", command=self.select_original_xlsx).pack(side=tk.LEFT, padx=2)
-        ttk.Button(row1, text="整理", command=self.process_original_xlsx).pack(side=tk.LEFT, padx=2)
-        ttk.Button(row1, text="导出", command=self.export_processed_xlsx).pack(side=tk.LEFT, padx=2)
-        self.processed_label = ttk.Label(row1, text="已整理 0 条")
+        ttk.Button(row1, text="选择", command=self.select_original_xlsx, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(row1, text="整理", command=self.process_original_xlsx, style='Primary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(row1, text="导出", command=self.export_processed_xlsx, style='Success.TButton').pack(side=tk.LEFT, padx=2)
+        self.processed_label = ttk.Label(row1, text="已整理 0 条", style='Success.TLabel')
         self.processed_label.pack(side=tk.LEFT, padx=10)
         
-        # 第2行：视频文件夹（扫描核对）
-        row2 = ttk.Frame(main_frame)
+        # 视频文件夹区域
+        row2 = ttk.Frame(main_frame, style='Card.TFrame')
         row2.pack(fill=tk.X, pady=5)
-        ttk.Label(row2, text="视频文件夹：").pack(side=tk.LEFT)
-        entry2 = tk.Entry(row2, textvariable=self.folder_path, width=50)
-        entry2.pack(side=tk.LEFT, padx=5)
+        ttk.Label(row2, text="视频文件夹：", style='Card.TLabel', width=12).pack(side=tk.LEFT)
+        entry2 = tk.Entry(row2, textvariable=self.folder_path, width=55, font=('微软雅黑', 9), relief='solid', bd=1)
+        entry2.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         entry2.bind('<Double-Button-1>', lambda e: self.paste_path(self.folder_path))
-        ttk.Button(row2, text="选择", command=self.select_folder).pack(side=tk.LEFT, padx=2)
-        ttk.Button(row2, text="扫描核对", command=self.scan_and_check).pack(side=tk.LEFT, padx=2)
-        self.file_count_label = ttk.Label(row2, text="共 0 个视频")
+        ttk.Button(row2, text="选择", command=self.select_folder, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(row2, text="扫描核对", command=self.scan_and_check, style='Primary.TButton').pack(side=tk.LEFT, padx=2)
+        self.file_count_label = ttk.Label(row2, text="共 0 个视频", style='Hint.TLabel')
         self.file_count_label.pack(side=tk.LEFT, padx=10)
         
-        # 第3行：导出重命名表格
-        row3 = ttk.Frame(main_frame)
+        # 重命名表格区域
+        row3 = ttk.Frame(main_frame, style='Card.TFrame')
         row3.pack(fill=tk.X, pady=5)
-        ttk.Label(row3, text="重命名表格：").pack(side=tk.LEFT)
-        entry3 = tk.Entry(row3, textvariable=self.xlsx_path, width=50)
-        entry3.pack(side=tk.LEFT, padx=5)
+        ttk.Label(row3, text="重命名表格：", style='Card.TLabel', width=12).pack(side=tk.LEFT)
+        entry3 = tk.Entry(row3, textvariable=self.xlsx_path, width=55, font=('微软雅黑', 9), relief='solid', bd=1)
+        entry3.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         entry3.bind('<Double-Button-1>', lambda e: self.paste_path(self.xlsx_path))
-        ttk.Button(row3, text="导出", command=self.export_xlsx).pack(side=tk.LEFT, padx=2)
-        ttk.Button(row3, text="选择", command=self.select_xlsx).pack(side=tk.LEFT, padx=2)
+        ttk.Button(row3, text="导出", command=self.export_xlsx, style='Success.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(row3, text="选择", command=self.select_xlsx, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
         
-        # 第4行：操作
-        row4 = ttk.Frame(main_frame)
+        # 操作区域
+        row4 = ttk.Frame(main_frame, style='Card.TFrame')
         row4.pack(fill=tk.X, pady=10)
-        ttk.Label(row4, text="操作：").pack(side=tk.LEFT)
-        ttk.Button(row4, text="预览", command=self.preview_rename, width=10).pack(side=tk.LEFT, padx=5)
-        ttk.Button(row4, text="执行", command=self.execute_rename, width=10).pack(side=tk.LEFT, padx=5)
-        ttk.Button(row4, text="撤销", command=self.undo_rename, width=10).pack(side=tk.LEFT, padx=5)
+        ttk.Label(row4, text="操作：", style='Card.TLabel', width=12).pack(side=tk.LEFT)
+        ttk.Button(row4, text="📋 预览", command=self.preview_rename, style='Secondary.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(row4, text="✅ 执行", command=self.execute_rename, style='Success.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(row4, text="↩️ 撤销", command=self.undo_rename, style='Danger.TButton').pack(side=tk.LEFT, padx=5)
         
-        # 日志
-        log_frame = ttk.LabelFrame(main_frame, text="日志", padding="5")
+        # 日志区域
+        log_frame = ttk.LabelFrame(main_frame, text="操作日志", padding="10", style='Card.TLabelframe')
         log_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        self.log_text1 = ScrolledText(log_frame, height=15)
+        self.log_text1 = ScrolledText(log_frame, height=15, font=('Consolas', 9), bg='#fafafa', relief='flat', bd=0)
         self.log_text1.pack(fill=tk.BOTH, expand=True)
     
     def log1(self, msg):
@@ -925,41 +1056,48 @@ class ToolboxApp:
     # ==================== 功能2：筛选未绑账户 ====================
     
     def setup_filter_account_tab(self):
-        main_frame = ttk.Frame(self.tab2, padding="10")
+        main_frame = ttk.Frame(self.tab2, padding="15", style='Card.TFrame')
         main_frame.pack(fill=tk.BOTH, expand=True)
         
         self.account_xlsx = tk.StringVar()
         self.account_txt = tk.StringVar()
         self.unbound_accounts = []
         
-        row1 = ttk.Frame(main_frame)
+        # 标题
+        ttk.Label(main_frame, text="筛选未绑账户", style='Title.TLabel').pack(anchor='w', pady=(0, 10))
+        
+        # 表格文件
+        row1 = ttk.Frame(main_frame, style='Card.TFrame')
         row1.pack(fill=tk.X, pady=5)
-        ttk.Label(row1, text="表格文件：").pack(side=tk.LEFT)
-        e1 = tk.Entry(row1, textvariable=self.account_xlsx, width=45)
-        e1.pack(side=tk.LEFT, padx=5)
+        ttk.Label(row1, text="表格文件：", style='Card.TLabel', width=12).pack(side=tk.LEFT)
+        e1 = tk.Entry(row1, textvariable=self.account_xlsx, width=50, font=('微软雅黑', 9), relief='solid', bd=1)
+        e1.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         e1.bind('<Double-Button-1>', lambda e: self.paste_path(self.account_xlsx))
-        ttk.Button(row1, text="选择", command=self.select_account_xlsx).pack(side=tk.LEFT, padx=2)
-        ttk.Label(row1, text="(已绑定)").pack(side=tk.LEFT, padx=5)
+        ttk.Button(row1, text="选择", command=self.select_account_xlsx, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Label(row1, text="(已绑定)", style='Hint.TLabel').pack(side=tk.LEFT, padx=5)
         
-        row2 = ttk.Frame(main_frame)
+        # TXT文件
+        row2 = ttk.Frame(main_frame, style='Card.TFrame')
         row2.pack(fill=tk.X, pady=5)
-        ttk.Label(row2, text="TXT文件：").pack(side=tk.LEFT)
-        e2 = tk.Entry(row2, textvariable=self.account_txt, width=45)
-        e2.pack(side=tk.LEFT, padx=5)
+        ttk.Label(row2, text="TXT文件：", style='Card.TLabel', width=12).pack(side=tk.LEFT)
+        e2 = tk.Entry(row2, textvariable=self.account_txt, width=50, font=('微软雅黑', 9), relief='solid', bd=1)
+        e2.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         e2.bind('<Double-Button-1>', lambda e: self.paste_path(self.account_txt))
-        ttk.Button(row2, text="选择", command=self.select_account_txt).pack(side=tk.LEFT, padx=2)
-        ttk.Label(row2, text="(所有账户)").pack(side=tk.LEFT, padx=5)
+        ttk.Button(row2, text="选择", command=self.select_account_txt, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Label(row2, text="(所有账户)", style='Hint.TLabel').pack(side=tk.LEFT, padx=5)
         
-        row3 = ttk.Frame(main_frame)
+        # 操作按钮
+        row3 = ttk.Frame(main_frame, style='Card.TFrame')
         row3.pack(fill=tk.X, pady=10)
-        ttk.Button(row3, text="开始筛选", command=self.filter_accounts, width=12).pack(side=tk.LEFT, padx=5)
-        ttk.Button(row3, text="复制结果", command=self.copy_accounts, width=12).pack(side=tk.LEFT, padx=5)
-        self.stats_label = ttk.Label(row3, text="")
+        ttk.Button(row3, text="🔍 开始筛选", command=self.filter_accounts, style='Primary.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(row3, text="📋 复制结果", command=self.copy_accounts, style='Success.TButton').pack(side=tk.LEFT, padx=5)
+        self.stats_label = ttk.Label(row3, text="", style='Success.TLabel')
         self.stats_label.pack(side=tk.LEFT, padx=20)
         
-        result_frame = ttk.LabelFrame(main_frame, text="结果", padding="5")
+        # 结果区域
+        result_frame = ttk.LabelFrame(main_frame, text="筛选结果", padding="10", style='Card.TLabelframe')
         result_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        self.log_text2 = ScrolledText(result_frame, height=20)
+        self.log_text2 = ScrolledText(result_frame, height=20, font=('Consolas', 9), bg='#fafafa', relief='flat', bd=0)
         self.log_text2.pack(fill=tk.BOTH, expand=True)
     
     def log2(self, msg):
@@ -1048,7 +1186,7 @@ class ToolboxApp:
     # ==================== 功能3：模板自动填写 ====================
     
     def setup_template_fill_tab(self):
-        main_frame = ttk.Frame(self.tab3, padding="10")
+        main_frame = ttk.Frame(self.tab3, padding="15", style='Card.TFrame')
         main_frame.pack(fill=tk.BOTH, expand=True)
         
         self.saved_templates = []
@@ -1057,72 +1195,75 @@ class ToolboxApp:
         # 所有占位符的变量
         self.company_var = tk.StringVar()  # {{company}}
         
+        # 标题
+        ttk.Label(main_frame, text="模板自动填写", style='Title.TLabel').pack(anchor='w', pady=(0, 5))
+        
         # 提示
         if not HAS_DOCX:
             ttk.Label(main_frame, text="提示：需要安装python-docx库才能使用此功能\n运行: pip install python-docx", 
-                     foreground='red').pack(pady=10)
+                     foreground='#E53935', background='#ffffff', font=('微软雅黑', 9)).pack(pady=5)
         
         # 第一部分：添加模板
-        add_frame = ttk.LabelFrame(main_frame, text="添加模板", padding="10")
+        add_frame = ttk.LabelFrame(main_frame, text="添加模板", padding="10", style='Card.TLabelframe')
         add_frame.pack(fill=tk.X, pady=5)
         
-        row1 = ttk.Frame(add_frame)
+        row1 = ttk.Frame(add_frame, style='Card.TFrame')
         row1.pack(fill=tk.X, pady=5)
-        ttk.Label(row1, text="选择Word文件：").pack(side=tk.LEFT)
+        ttk.Label(row1, text="选择Word文件：", style='Card.TLabel').pack(side=tk.LEFT)
         self.new_template_path = tk.StringVar()
-        e1 = tk.Entry(row1, textvariable=self.new_template_path, width=40)
-        e1.pack(side=tk.LEFT, padx=5)
+        e1 = tk.Entry(row1, textvariable=self.new_template_path, width=45, font=('微软雅黑', 9), relief='solid', bd=1)
+        e1.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         e1.bind('<Double-Button-1>', lambda e: self.paste_path(self.new_template_path))
-        ttk.Button(row1, text="选择文件", command=self.select_new_template).pack(side=tk.LEFT, padx=2)
-        ttk.Button(row1, text="添加并保存", command=self.add_template).pack(side=tk.LEFT, padx=2)
+        ttk.Button(row1, text="选择文件", command=self.select_new_template, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(row1, text="添加并保存", command=self.add_template, style='Primary.TButton').pack(side=tk.LEFT, padx=2)
         
-        # 第二部分：已保存的模板列表（可选择）
-        list_frame = ttk.LabelFrame(main_frame, text="已保存模板（勾选要生成的模板）", padding="10")
+        # 第二部分：已保存的模板列表
+        list_frame = ttk.LabelFrame(main_frame, text="已保存模板（勾选要生成的模板）", padding="10", style='Card.TLabelframe')
         list_frame.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        self.template_list_frame = ttk.Frame(list_frame)
+        self.template_list_frame = ttk.Frame(list_frame, style='Card.TFrame')
         self.template_list_frame.pack(fill=tk.BOTH, expand=True)
         
-        btn_frame = ttk.Frame(list_frame)
+        btn_frame = ttk.Frame(list_frame, style='Card.TFrame')
         btn_frame.pack(fill=tk.X, pady=5)
-        ttk.Button(btn_frame, text="全选", command=self.select_all_templates).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="取消全选", command=self.unselect_all_templates).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="删除选中", command=self.delete_selected_templates).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="扫描占位符", command=self.scan_placeholders_in_selected).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="批量更新路径", command=self.batch_update_paths).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="全选", command=self.select_all_templates, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="取消全选", command=self.unselect_all_templates, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="删除选中", command=self.delete_selected_templates, style='Danger.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="扫描占位符", command=self.scan_placeholders_in_selected, style='Primary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="批量更新路径", command=self.batch_update_paths, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
         
         # 第三部分：填写信息（动态显示）
-        self.info_frame = ttk.LabelFrame(main_frame, text="填写信息（选择模板后点击'扫描占位符'显示）", padding="10")
+        self.info_frame = ttk.LabelFrame(main_frame, text="填写信息（选择模板后点击'扫描占位符'显示）", padding="10", style='Card.TLabelframe')
         self.info_frame.pack(fill=tk.X, pady=5)
         
         # 创建所有可能的输入框（初始隐藏）
         self.input_rows = {}
         
         # {{company}} - 主体名称
-        self.company_row = ttk.Frame(self.info_frame)
-        ttk.Label(self.company_row, text="主体名称 {{company}}：").pack(side=tk.LEFT)
-        ttk.Entry(self.company_row, textvariable=self.company_var, width=30).pack(side=tk.LEFT, padx=5)
+        self.company_row = ttk.Frame(self.info_frame, style='Card.TFrame')
+        ttk.Label(self.company_row, text="主体名称 {{company}}：", style='Card.TLabel').pack(side=tk.LEFT)
+        tk.Entry(self.company_row, textvariable=self.company_var, width=30, font=('微软雅黑', 9), relief='solid', bd=1).pack(side=tk.LEFT, padx=5)
         
         # {{Date_of_Signing}} - 签订日期（自动计算）
-        self.signing_row = ttk.Frame(self.info_frame)
+        self.signing_row = ttk.Frame(self.info_frame, style='Card.TFrame')
         self.signing_date_var = tk.StringVar()
-        ttk.Label(self.signing_row, text="签订日期 {{Date_of_Signing}}：").pack(side=tk.LEFT)
-        ttk.Label(self.signing_row, textvariable=self.signing_date_var, width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Label(self.signing_row, text="(自动计算)").pack(side=tk.LEFT)
+        ttk.Label(self.signing_row, text="签订日期 {{Date_of_Signing}}：", style='Card.TLabel').pack(side=tk.LEFT)
+        ttk.Label(self.signing_row, textvariable=self.signing_date_var, width=20, style='Card.TLabel').pack(side=tk.LEFT, padx=5)
+        ttk.Label(self.signing_row, text="(自动计算)", style='Hint.TLabel').pack(side=tk.LEFT)
         
         # {{out_of_date}} - 到期日（自动计算）
-        self.expiry_row = ttk.Frame(self.info_frame)
+        self.expiry_row = ttk.Frame(self.info_frame, style='Card.TFrame')
         self.expiry_date_var = tk.StringVar()
-        ttk.Label(self.expiry_row, text="到期日 {{out_of_date}}：").pack(side=tk.LEFT)
-        ttk.Label(self.expiry_row, textvariable=self.expiry_date_var, width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Label(self.expiry_row, text="(签订日期+1年-1天)").pack(side=tk.LEFT)
+        ttk.Label(self.expiry_row, text="到期日 {{out_of_date}}：", style='Card.TLabel').pack(side=tk.LEFT)
+        ttk.Label(self.expiry_row, textvariable=self.expiry_date_var, width=20, style='Card.TLabel').pack(side=tk.LEFT, padx=5)
+        ttk.Label(self.expiry_row, text="(签订日期+1年-1天)", style='Hint.TLabel').pack(side=tk.LEFT)
         
         # {{date}} - 普通日期
-        self.date_row = ttk.Frame(self.info_frame)
+        self.date_row = ttk.Frame(self.info_frame, style='Card.TFrame')
         self.date_var = tk.StringVar()
-        ttk.Label(self.date_row, text="日期 {{date}}：").pack(side=tk.LEFT)
-        ttk.Label(self.date_row, textvariable=self.date_var, width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Label(self.date_row, text="(当天日期)").pack(side=tk.LEFT)
+        ttk.Label(self.date_row, text="日期 {{date}}：", style='Card.TLabel').pack(side=tk.LEFT)
+        ttk.Label(self.date_row, textvariable=self.date_var, width=20, style='Card.TLabel').pack(side=tk.LEFT, padx=5)
+        ttk.Label(self.date_row, text="(当天日期)", style='Hint.TLabel').pack(side=tk.LEFT)
         
         # 保存输入框引用
         self.input_rows = {
@@ -1137,24 +1278,24 @@ class ToolboxApp:
             row.pack_forget()
         
         # 第四部分：输出设置
-        output_frame = ttk.Frame(main_frame)
+        output_frame = ttk.Frame(main_frame, style='Card.TFrame')
         output_frame.pack(fill=tk.X, pady=5)
-        ttk.Label(output_frame, text="输出文件夹：").pack(side=tk.LEFT)
-        e2 = tk.Entry(output_frame, textvariable=self.output_folder, width=40)
-        e2.pack(side=tk.LEFT, padx=5)
+        ttk.Label(output_frame, text="输出文件夹：", style='Card.TLabel', width=12).pack(side=tk.LEFT)
+        e2 = tk.Entry(output_frame, textvariable=self.output_folder, width=45, font=('微软雅黑', 9), relief='solid', bd=1)
+        e2.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         e2.bind('<Double-Button-1>', lambda e: self.paste_path(self.output_folder))
-        ttk.Button(output_frame, text="选择", command=self.select_output_folder).pack(side=tk.LEFT, padx=2)
+        ttk.Button(output_frame, text="选择", command=self.select_output_folder, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
         
         # 第五部分：操作按钮
-        row5 = ttk.Frame(main_frame)
+        row5 = ttk.Frame(main_frame, style='Card.TFrame')
         row5.pack(fill=tk.X, pady=10)
-        ttk.Button(row5, text="预览替换", command=self.preview_template, width=12).pack(side=tk.LEFT, padx=5)
-        ttk.Button(row5, text="生成合同", command=self.generate_contract, width=12).pack(side=tk.LEFT, padx=5)
+        ttk.Button(row5, text="📋 预览替换", command=self.preview_template, style='Secondary.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(row5, text="✅ 生成合同", command=self.generate_contract, style='Primary.TButton').pack(side=tk.LEFT, padx=5)
         
-        # 日志
-        log_frame = ttk.LabelFrame(main_frame, text="日志", padding="5")
+        # 日志区域
+        log_frame = ttk.LabelFrame(main_frame, text="操作日志", padding="10", style='Card.TLabelframe')
         log_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        self.log_text3 = ScrolledText(log_frame, height=8)
+        self.log_text3 = ScrolledText(log_frame, height=8, font=('Consolas', 9), bg='#fafafa', relief='flat', bd=0)
         self.log_text3.pack(fill=tk.BOTH, expand=True)
         
         # 加载已保存的模板
@@ -1718,47 +1859,50 @@ class ToolboxApp:
     
     def setup_value_convert_tab(self):
         """设置数值转换标签页"""
-        main_frame = ttk.Frame(self.tab4, padding="10")
+        main_frame = ttk.Frame(self.tab4, padding="15", style='Card.TFrame')
         main_frame.pack(fill=tk.BOTH, expand=True)
         
+        # 标题
+        ttk.Label(main_frame, text="数值转换", style='Title.TLabel').pack(anchor='w', pady=(0, 10))
+        
         # 输入区域
-        input_frame = ttk.LabelFrame(main_frame, text="输入ID", padding="5")
+        input_frame = ttk.LabelFrame(main_frame, text="输入ID", padding="10", style='Card.TLabelframe')
         input_frame.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        self.input_text = tk.Text(input_frame, height=8, width=60)
+        self.input_text = tk.Text(input_frame, height=8, width=60, font=('Consolas', 10), relief='solid', bd=1, bg='#fafafa')
         self.input_text.pack(fill=tk.BOTH, expand=True)
         
         # 输出格式选择
-        format_frame = ttk.Frame(main_frame)
+        format_frame = ttk.Frame(main_frame, style='Card.TFrame')
         format_frame.pack(fill=tk.X, pady=5)
         
-        ttk.Label(format_frame, text="输出格式：").pack(side=tk.LEFT)
+        ttk.Label(format_frame, text="输出格式：", style='Card.TLabel').pack(side=tk.LEFT)
         self.output_format = tk.StringVar(value="按行")
-        ttk.Radiobutton(format_frame, text="按行分隔（所有ID一行）", variable=self.output_format, value="按行").pack(side=tk.LEFT, padx=10)
-        ttk.Radiobutton(format_frame, text="按列分隔（每个ID一行）", variable=self.output_format, value="按列").pack(side=tk.LEFT, padx=10)
+        ttk.Radiobutton(format_frame, text="按行分隔（所有ID一行）", variable=self.output_format, value="按行", style='Custom.TRadiobutton').pack(side=tk.LEFT, padx=10)
+        ttk.Radiobutton(format_frame, text="按列分隔（每个ID一行）", variable=self.output_format, value="按列", style='Custom.TRadiobutton').pack(side=tk.LEFT, padx=10)
         
         # 分隔符选择
-        separator_frame = ttk.Frame(main_frame)
+        separator_frame = ttk.Frame(main_frame, style='Card.TFrame')
         separator_frame.pack(fill=tk.X, pady=5)
         
-        ttk.Label(separator_frame, text="分隔符：").pack(side=tk.LEFT)
+        ttk.Label(separator_frame, text="分隔符：", style='Card.TLabel').pack(side=tk.LEFT)
         self.output_separator = tk.StringVar(value="逗号")
-        ttk.Radiobutton(separator_frame, text="英文逗号（,）", variable=self.output_separator, value="逗号").pack(side=tk.LEFT, padx=10)
-        ttk.Radiobutton(separator_frame, text="英文分号（;）", variable=self.output_separator, value="分号").pack(side=tk.LEFT, padx=10)
+        ttk.Radiobutton(separator_frame, text="英文逗号（,）", variable=self.output_separator, value="逗号", style='Custom.TRadiobutton').pack(side=tk.LEFT, padx=10)
+        ttk.Radiobutton(separator_frame, text="英文分号（;）", variable=self.output_separator, value="分号", style='Custom.TRadiobutton').pack(side=tk.LEFT, padx=10)
         
         # 操作按钮
-        btn_frame = ttk.Frame(main_frame)
+        btn_frame = ttk.Frame(main_frame, style='Card.TFrame')
         btn_frame.pack(fill=tk.X, pady=10)
         
-        ttk.Button(btn_frame, text="转换", command=self.convert_values, width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="复制结果", command=self.copy_convert_result, width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="清空", command=self.clear_convert, width=15).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="🔄 转换", command=self.convert_values, style='Primary.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="📋 复制结果", command=self.copy_convert_result, style='Success.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="🗑️ 清空", command=self.clear_convert, style='Danger.TButton').pack(side=tk.LEFT, padx=5)
         
         # 输出区域
-        output_frame = ttk.LabelFrame(main_frame, text="转换结果", padding="5")
+        output_frame = ttk.LabelFrame(main_frame, text="转换结果", padding="10", style='Card.TLabelframe')
         output_frame.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        self.output_text = tk.Text(output_frame, height=8, width=60)
+        self.output_text = tk.Text(output_frame, height=8, width=60, font=('Consolas', 10), relief='solid', bd=1, bg='#fafafa')
         self.output_text.pack(fill=tk.BOTH, expand=True)
     
     def convert_values(self):

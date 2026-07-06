@@ -292,7 +292,6 @@ class ToolboxApp:
         self.processed_names = []  # 处理后的视频命名列表
         self.processed_data = []  # 处理后的完整数据
         self.video_files = []  # 实际扫描到的视频文件
-        self.renamed_xlsx_path = None  # 已生成的重命名表格路径
         self.process_type = tk.StringVar(value="抖音")  # 整理方式：抖音/视频号
         
         # 标题
@@ -332,16 +331,12 @@ class ToolboxApp:
         self.file_count_label = ttk.Label(row2, text="共 0 个视频", style='Hint.TLabel')
         self.file_count_label.pack(side=tk.LEFT, padx=10)
         
-        # 重命名表格区域
+        # 重命名表格区域（自动生成，无需手动操作）
         row3 = ttk.Frame(main_frame, style='Card.TFrame')
         row3.pack(fill=tk.X, pady=5)
         ttk.Label(row3, text="重命名表格：", style='Card.TLabel', width=12).pack(side=tk.LEFT)
-        entry3 = tk.Entry(row3, textvariable=self.xlsx_path, width=55, font=('微软雅黑', 9), relief='solid', bd=1)
-        entry3.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-        entry3.bind('<Double-Button-1>', lambda e: self.paste_path(self.xlsx_path))
-        self.make_draggable(entry3, self.xlsx_path, 'file', '表格')
-        ttk.Button(row3, text="导出", command=self.export_xlsx, style='Success.TButton').pack(side=tk.LEFT, padx=2)
-        ttk.Button(row3, text="选择", command=self.select_xlsx, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
+        self.rename_table_label = ttk.Label(row3, text="整理后自动生成", style='Hint.TLabel')
+        self.rename_table_label.pack(side=tk.LEFT, padx=5)
         
         # 操作区域
         row4 = ttk.Frame(main_frame, style='Card.TFrame')
@@ -385,7 +380,6 @@ class ToolboxApp:
         process_type = self.process_type.get()
         self.processed_names = []
         self.processed_data = []
-        self.renamed_xlsx_path = None  # 重新整理时清除已生成的重命名表格标志
         self.clear_log1()
         
         try:
@@ -418,7 +412,11 @@ class ToolboxApp:
             self.processed_label.config(text=f"已整理 {len(self.processed_names)} 条")
             cost_name = '消耗' if process_type == "抖音" else '花费'
             self.log1(f"\n共整理 {len(self.processed_names)} 条数据（筛选{cost_name}>1500）")
-            messagebox.showinfo("完成", f"整理完成，共 {len(self.processed_names)} 条")
+            
+            # 自动生成重命名表格
+            self._auto_generate_rename_table(file, process_type)
+            
+            messagebox.showinfo("完成", f"整理完成，共 {len(self.processed_names)} 条\n重命名表格已自动生成")
             
         except Exception as e:
             messagebox.showerror("错误", str(e))
@@ -795,75 +793,104 @@ class ToolboxApp:
             })
     
     def export_processed_xlsx(self):
-        """导出整理后的数据（需要先生成重命名表格）"""
+        """导出整理后的数据和重命名表格到一个工作簿（两个工作表）"""
         if not self.processed_data:
             messagebox.showwarning("提示", "请先整理原始表格")
             return
-        
-        # 检查是否已生成重命名表格
-        if not self.renamed_xlsx_path or not os.path.exists(self.renamed_xlsx_path):
-            messagebox.showwarning("提示", "请先生成重命名表格\n（点击'重命名表格'旁的'导出'按钮）")
-            return
-        
+
         process_type = self.process_type.get()
-        
+
         file = filedialog.asksaveasfilename(
             title="保存整理结果", defaultextension=".xlsx",
             filetypes=[("Excel", "*.xlsx")], initialfile=f"{process_type}整理结果.xlsx")
         if not file:
             return
-        
+
         try:
             wb = Workbook()
-            ws = wb.active
-            
+            # 工作表1：整理结果
+            ws1 = wb.active
+            ws1.title = "整理结果"
+
             if process_type == "抖音":
-                ws['A1'] = '视频标题'
-                ws['B1'] = '消耗'
-                ws['C1'] = '视频命名2'
-                ws['D1'] = '视频命名'
-                
+                ws1['A1'] = '视频标题'
+                ws1['B1'] = '消耗'
+                ws1['C1'] = '视频命名2'
+                ws1['D1'] = '视频命名'
+
                 for i, data in enumerate(self.processed_data):
                     row = i + 2
-                    ws[f'A{row}'] = data['视频标题']
-                    ws[f'B{row}'] = data['消耗']
-                    ws[f'C{row}'] = data['视频命名2']
-                    ws[f'D{row}'] = data['视频命名']
-                
-                ws.column_dimensions['A'].width = 40
-                ws.column_dimensions['B'].width = 15
-                ws.column_dimensions['C'].width = 30
-                ws.column_dimensions['D'].width = 50
+                    ws1[f'A{row}'] = data['视频标题']
+                    ws1[f'B{row}'] = data['消耗']
+                    ws1[f'C{row}'] = data['视频命名2']
+                    ws1[f'D{row}'] = data['视频命名']
+
+                ws1.column_dimensions['A'].width = 40
+                ws1.column_dimensions['B'].width = 15
+                ws1.column_dimensions['C'].width = 30
+                ws1.column_dimensions['D'].width = 50
             else:
                 # 视频号
-                ws['A1'] = '视频名称'
-                ws['B1'] = '花费'
-                ws['C1'] = '下单次数'
-                ws['D1'] = '下单金额'
-                ws['E1'] = '下单ROI'
-                ws['F1'] = '视频命名'
-                
+                ws1['A1'] = '视频名称'
+                ws1['B1'] = '花费'
+                ws1['C1'] = '下单次数'
+                ws1['D1'] = '下单金额'
+                ws1['E1'] = '下单ROI'
+                ws1['F1'] = '视频命名'
+
                 for i, data in enumerate(self.processed_data):
                     row = i + 2
-                    ws[f'A{row}'] = data['视频名称']
-                    ws[f'B{row}'] = data['花费']
-                    ws[f'C{row}'] = data['下单次数']
-                    ws[f'D{row}'] = data['下单金额']
-                    ws[f'E{row}'] = data['下单ROI']
-                    ws[f'F{row}'] = data['视频命名']
-                
-                ws.column_dimensions['A'].width = 40
-                ws.column_dimensions['B'].width = 15
-                ws.column_dimensions['C'].width = 15
-                ws.column_dimensions['D'].width = 15
-                ws.column_dimensions['E'].width = 15
-                ws.column_dimensions['F'].width = 50
-            
+                    ws1[f'A{row}'] = data['视频名称']
+                    ws1[f'B{row}'] = data['花费']
+                    ws1[f'C{row}'] = data['下单次数']
+                    ws1[f'D{row}'] = data['下单金额']
+                    ws1[f'E{row}'] = data['下单ROI']
+                    ws1[f'F{row}'] = data['视频命名']
+
+                ws1.column_dimensions['A'].width = 40
+                ws1.column_dimensions['B'].width = 15
+                ws1.column_dimensions['C'].width = 15
+                ws1.column_dimensions['D'].width = 15
+                ws1.column_dimensions['E'].width = 15
+                ws1.column_dimensions['F'].width = 50
+
+            # 工作表2：重命名表格
+            ws2 = wb.create_sheet(title="重命名表格")
+            ws2['A1'] = '文件名（旧）'
+            ws2['B1'] = '文件名（新）'
+
+            for i, new_name in enumerate(self.processed_names):
+                row = i + 2
+
+                # 根据整理方式生成旧文件名
+                if process_type == "抖音":
+                    if i == 0:
+                        old_name = "巨量引擎工作台-升级版.mp4"
+                    else:
+                        old_name = f"巨量引擎工作台-升级版 ({i}).mp4"
+                else:
+                    # 视频号
+                    if i == 0:
+                        old_name = "腾讯营销_-_客户工作台.mp4"
+                    else:
+                        old_name = f"腾讯营销_-_客户工作台 ({i}).mp4"
+
+                ws2[f'A{row}'] = old_name
+                ws2[f'B{row}'] = new_name + ".mp4"
+
+            ws2.column_dimensions['A'].width = 35
+            ws2.column_dimensions['B'].width = 50
+
             wb.save(file)
-            
-            self.log1(f"已导出整理结果：{file}")
-            messagebox.showinfo("成功", f"导出完成\n文件：{file}")
-            
+
+            # 同时更新重命名表格路径（供后续预览/执行使用）
+            self.xlsx_path.set(file)
+
+            self.log1(f"已导出（含2个工作表）：{file}")
+            self.log1(f"  工作表1：整理结果（{len(self.processed_data)} 条）")
+            self.log1(f"  工作表2：重命名表格（{len(self.processed_names)} 条）")
+            messagebox.showinfo("成功", f"导出完成\n包含2个工作表：\n1. 整理结果\n2. 重命名表格\n\n文件：{file}")
+
         except Exception as e:
             messagebox.showerror("错误", str(e))
             self.log1(f"错误：{e}")
@@ -950,6 +977,59 @@ class ToolboxApp:
             messagebox.showerror("错误", str(e))
             self.log1(f"错误：{e}")
     
+    def _auto_generate_rename_table(self, original_file, process_type):
+        """整理完成后自动生成重命名表格，保存到原始表格同目录"""
+        if not self.processed_names:
+            return
+
+        # 生成保存路径：原始表格同目录
+        dir_path = os.path.dirname(original_file)
+        file_name = f"{process_type}视频重命名.xlsx"
+        save_path = os.path.join(dir_path, file_name)
+
+        try:
+            wb = Workbook()
+            ws = wb.active
+            ws['A1'] = '文件名（旧）'
+            ws['B1'] = '文件名（新）'
+
+            # 生成旧文件名
+            for i, new_name in enumerate(self.processed_names):
+                row = i + 2
+
+                # 根据整理方式生成旧文件名
+                if process_type == "抖音":
+                    if i == 0:
+                        old_name = "巨量引擎工作台-升级版.mp4"
+                    else:
+                        old_name = f"巨量引擎工作台-升级版 ({i}).mp4"
+                else:
+                    # 视频号
+                    if i == 0:
+                        old_name = "腾讯营销_-_客户工作台.mp4"
+                    else:
+                        old_name = f"腾讯营销_-_客户工作台 ({i}).mp4"
+
+                ws[f'A{row}'] = old_name
+                ws[f'B{row}'] = new_name + ".mp4"
+
+            ws.column_dimensions['A'].width = 35
+            ws.column_dimensions['B'].width = 50
+            wb.save(save_path)
+            self.xlsx_path.set(save_path)
+
+            # 更新界面显示
+            self.rename_table_label.config(
+                text=f"已生成：{file_name}",
+                style='Success.TLabel'
+            )
+
+            self.log1(f"重命名表格已自动生成：{save_path}")
+
+        except Exception as e:
+            messagebox.showerror("错误", f"生成重命名表格失败：{e}")
+            self.log1(f"错误：{e}")
+
     def export_xlsx(self):
         """导出重命名表格，自动生成旧文件名并填充新文件名"""
         if not self.processed_names:
@@ -994,7 +1074,6 @@ class ToolboxApp:
             ws.column_dimensions['B'].width = 50
             wb.save(file)
             self.xlsx_path.set(file)
-            self.renamed_xlsx_path = file  # 记录已生成的重命名表格路径
             
             self.log1(f"已导出：{file}")
             self.log1(f"共 {len(self.processed_names)} 条重命名记录")
@@ -1014,10 +1093,14 @@ class ToolboxApp:
         file = self.xlsx_path.get()
         if not file or not os.path.isfile(file):
             return None
-        
+
         try:
             wb = load_workbook(file, data_only=True)
-            ws = wb.active
+            # 优先读取"重命名表格"工作表，没有则读取活动工作表
+            if "重命名表格" in wb.sheetnames:
+                ws = wb["重命名表格"]
+            else:
+                ws = wb.active
             result = []
             for row in ws.iter_rows(min_row=2, values_only=True):
                 if len(row) >= 2 and row[0] and row[1]:

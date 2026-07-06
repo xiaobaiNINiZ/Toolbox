@@ -22,6 +22,13 @@ try:
 except ImportError:
     HAS_DOCX = False
 
+# 尝试导入拖拽支持库
+try:
+    from tkinterdnd2 import DND_FILES, TkinterDnD
+    HAS_DND = True
+except ImportError:
+    HAS_DND = False
+
 
 # 支持的视频格式
 VIDEO_EXTENSIONS = {
@@ -203,6 +210,74 @@ class ToolboxApp:
             textvariable.set(content)
         except:
             pass
+
+    def make_draggable(self, entry, textvariable, file_type='file', title='文件'):
+        """为输入框添加拖拽支持
+        file_type: 'file' (单个文件) 或 'folder' (文件夹) 或 'any' (任意)
+        """
+        if not HAS_DND:
+            return
+
+        def parse_drop_data(data):
+            """解析拖拽数据，处理花括号包裹的路径（包含空格的路径）"""
+            # 拖拽数据可能用花括号包裹包含空格的路径
+            result = []
+            i = 0
+            data = data.strip()
+            while i < len(data):
+                if data[i] == '{':
+                    # 找到匹配的右花括号
+                    j = data.find('}', i)
+                    if j != -1:
+                        result.append(data[i+1:j])
+                        i = j + 1
+                    else:
+                        i += 1
+                elif data[i] == ' ':
+                    i += 1
+                else:
+                    # 普通路径，读取到下一个空格或花括号
+                    j = i
+                    while j < len(data) and data[j] not in (' ', '{'):
+                        j += 1
+                    if j > i:
+                        result.append(data[i:j])
+                    i = j
+            return result
+
+        def on_drop(event):
+            data = event.data
+            paths = parse_drop_data(data)
+            if not paths:
+                return
+
+            path = paths[0]
+            # 根据类型验证
+            if file_type == 'file':
+                if not os.path.isfile(path):
+                    messagebox.showwarning("提示", f"请拖入{title}文件\n当前：{path}")
+                    return
+            elif file_type == 'folder':
+                if not os.path.isdir(path):
+                    messagebox.showwarning("提示", f"请拖入{title}文件夹\n当前：{path}")
+                    return
+            # file_type == 'any' 不做验证
+
+            textvariable.set(path)
+            # 改变边框颜色表示已接收
+            entry.config(bg='#e8f5e9')
+
+        def on_drag_enter(event):
+            entry.config(bg='#fff9c4')  # 拖入时变黄色
+
+        def on_drag_leave(event):
+            entry.config(bg='white')  # 离开时恢复
+
+        # 注册拖拽事件
+        entry.drop_target_register(DND_FILES)
+        entry.dnd_bind('<<Drop>>', on_drop)
+        entry.dnd_bind('<<DropEnter>>', on_drag_enter)
+        entry.dnd_bind('<<DropLeave>>', on_drag_leave)
     
     # ==================== 功能1：视频批量重命名 ====================
     
@@ -236,6 +311,7 @@ class ToolboxApp:
         entry1 = tk.Entry(row1, textvariable=self.original_xlsx_path, width=55, font=('微软雅黑', 9), relief='solid', bd=1)
         entry1.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         entry1.bind('<Double-Button-1>', lambda e: self.paste_path(self.original_xlsx_path))
+        self.make_draggable(entry1, self.original_xlsx_path, 'file', '表格')
         ttk.Button(row1, text="选择", command=self.select_original_xlsx, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
         ttk.Button(row1, text="整理", command=self.process_original_xlsx, style='Primary.TButton').pack(side=tk.LEFT, padx=2)
         ttk.Button(row1, text="导出", command=self.export_processed_xlsx, style='Success.TButton').pack(side=tk.LEFT, padx=2)
@@ -249,6 +325,7 @@ class ToolboxApp:
         entry2 = tk.Entry(row2, textvariable=self.folder_path, width=55, font=('微软雅黑', 9), relief='solid', bd=1)
         entry2.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         entry2.bind('<Double-Button-1>', lambda e: self.paste_path(self.folder_path))
+        self.make_draggable(entry2, self.folder_path, 'folder', '视频文件夹')
         ttk.Button(row2, text="选择", command=self.select_folder, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
         ttk.Button(row2, text="扫描核对", command=self.scan_and_check, style='Primary.TButton').pack(side=tk.LEFT, padx=2)
         self.file_count_label = ttk.Label(row2, text="共 0 个视频", style='Hint.TLabel')
@@ -261,6 +338,7 @@ class ToolboxApp:
         entry3 = tk.Entry(row3, textvariable=self.xlsx_path, width=55, font=('微软雅黑', 9), relief='solid', bd=1)
         entry3.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         entry3.bind('<Double-Button-1>', lambda e: self.paste_path(self.xlsx_path))
+        self.make_draggable(entry3, self.xlsx_path, 'file', '表格')
         ttk.Button(row3, text="导出", command=self.export_xlsx, style='Success.TButton').pack(side=tk.LEFT, padx=2)
         ttk.Button(row3, text="选择", command=self.select_xlsx, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
         
@@ -1073,6 +1151,7 @@ class ToolboxApp:
         e1 = tk.Entry(row1, textvariable=self.account_xlsx, width=50, font=('微软雅黑', 9), relief='solid', bd=1)
         e1.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         e1.bind('<Double-Button-1>', lambda e: self.paste_path(self.account_xlsx))
+        self.make_draggable(e1, self.account_xlsx, 'file', '表格')
         ttk.Button(row1, text="选择", command=self.select_account_xlsx, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
         ttk.Label(row1, text="(已绑定)", style='Hint.TLabel').pack(side=tk.LEFT, padx=5)
         
@@ -1083,6 +1162,7 @@ class ToolboxApp:
         e2 = tk.Entry(row2, textvariable=self.account_txt, width=50, font=('微软雅黑', 9), relief='solid', bd=1)
         e2.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         e2.bind('<Double-Button-1>', lambda e: self.paste_path(self.account_txt))
+        self.make_draggable(e2, self.account_txt, 'file', 'TXT')
         ttk.Button(row2, text="选择", command=self.select_account_txt, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
         ttk.Label(row2, text="(所有账户)", style='Hint.TLabel').pack(side=tk.LEFT, padx=5)
         
@@ -1214,6 +1294,7 @@ class ToolboxApp:
         e1 = tk.Entry(row1, textvariable=self.new_template_path, width=45, font=('微软雅黑', 9), relief='solid', bd=1)
         e1.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         e1.bind('<Double-Button-1>', lambda e: self.paste_path(self.new_template_path))
+        self.make_draggable(e1, self.new_template_path, 'file', 'Word')
         ttk.Button(row1, text="选择文件", command=self.select_new_template, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
         ttk.Button(row1, text="添加并保存", command=self.add_template, style='Primary.TButton').pack(side=tk.LEFT, padx=2)
         
@@ -1284,6 +1365,7 @@ class ToolboxApp:
         e2 = tk.Entry(output_frame, textvariable=self.output_folder, width=45, font=('微软雅黑', 9), relief='solid', bd=1)
         e2.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         e2.bind('<Double-Button-1>', lambda e: self.paste_path(self.output_folder))
+        self.make_draggable(e2, self.output_folder, 'folder', '输出文件夹')
         ttk.Button(output_frame, text="选择", command=self.select_output_folder, style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
         
         # 第五部分：操作按钮
@@ -1960,7 +2042,11 @@ class ToolboxApp:
 import sys
 
 def main():
-    root = tk.Tk()
+    # 如果支持拖拽，使用 TkinterDnD.Tk
+    if HAS_DND:
+        root = TkinterDnD.Tk()
+    else:
+        root = tk.Tk()
     app = ToolboxApp(root)
     root.mainloop()
 

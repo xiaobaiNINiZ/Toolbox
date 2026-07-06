@@ -292,6 +292,7 @@ class ToolboxApp:
         self.processed_names = []  # 处理后的视频命名列表
         self.processed_data = []  # 处理后的完整数据
         self.video_files = []  # 实际扫描到的视频文件
+        self.renamed_xlsx_path = None  # 已生成的重命名表格路径
         self.process_type = tk.StringVar(value="抖音")  # 整理方式：抖音/视频号
         
         # 标题
@@ -384,6 +385,7 @@ class ToolboxApp:
         process_type = self.process_type.get()
         self.processed_names = []
         self.processed_data = []
+        self.renamed_xlsx_path = None  # 重新整理时清除已生成的重命名表格标志
         self.clear_log1()
         
         try:
@@ -793,9 +795,14 @@ class ToolboxApp:
             })
     
     def export_processed_xlsx(self):
-        """导出整理后的数据"""
+        """导出整理后的数据（需要先生成重命名表格）"""
         if not self.processed_data:
             messagebox.showwarning("提示", "请先整理原始表格")
+            return
+        
+        # 检查是否已生成重命名表格
+        if not self.renamed_xlsx_path or not os.path.exists(self.renamed_xlsx_path):
+            messagebox.showwarning("提示", "请先生成重命名表格\n（点击'重命名表格'旁的'导出'按钮）")
             return
         
         process_type = self.process_type.get()
@@ -987,6 +994,7 @@ class ToolboxApp:
             ws.column_dimensions['B'].width = 50
             wb.save(file)
             self.xlsx_path.set(file)
+            self.renamed_xlsx_path = file  # 记录已生成的重命名表格路径
             
             self.log1(f"已导出：{file}")
             self.log1(f"共 {len(self.processed_names)} 条重命名记录")

@@ -80,6 +80,11 @@ class ToolboxApp:
         self.tab4 = ttk.Frame(self.notebook, style='Card.TFrame')
         self.notebook.add(self.tab4, text="  🔢 数值转换  ")
         self.setup_value_convert_tab()
+        
+        # 功能5：表格匹配
+        self.tab5 = ttk.Frame(self.notebook, style='Card.TFrame')
+        self.notebook.add(self.tab5, text="  📊 表格匹配  ")
+        self.setup_table_match_tab()
     
     def setup_styles(self):
         """配置现代化UI样式"""
@@ -2128,6 +2133,522 @@ class ToolboxApp:
         """清空输入和输出"""
         self.input_text.delete("1.0", tk.END)
         self.output_text.delete("1.0", tk.END)
+
+    # ==================== 功能5：表格匹配 ====================
+
+    def setup_table_match_tab(self):
+        """设置表格匹配标签页"""
+        main_frame = ttk.Frame(self.tab5, padding="15", style='Card.TFrame')
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # 标题
+        ttk.Label(main_frame, text="表格匹配工具", style='Title.TLabel').pack(anchor='w', pady=(0, 5))
+        ttk.Label(main_frame, text="以关联键为匹配条件，将原始表格字段带出到待匹配表格", style='Hint.TLabel').pack(anchor='w', pady=(0, 10))
+
+        # 原始表格区域
+        row1 = ttk.Frame(main_frame, style='Card.TFrame')
+        row1.pack(fill=tk.X, pady=5)
+        ttk.Label(row1, text="原始表格：", style='Card.TLabel', width=12).pack(side=tk.LEFT)
+        self.match_source_path = tk.StringVar()
+        e1 = tk.Entry(row1, textvariable=self.match_source_path, width=55, font=('微软雅黑', 9), relief='solid', bd=1)
+        e1.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+        e1.bind('<Double-Button-1>', lambda e: self.paste_path(self.match_source_path))
+        self.make_draggable(e1, self.match_source_path, 'file', '表格')
+        ttk.Button(row1, text="选择", command=lambda: self.select_match_file('source'), style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(row1, text="读取表头", command=lambda: self.read_match_headers('source'), style='Primary.TButton').pack(side=tk.LEFT, padx=2)
+        self.source_header_label = ttk.Label(row1, text="未读取", style='Hint.TLabel')
+        self.source_header_label.pack(side=tk.LEFT, padx=10)
+
+        # 待匹配表格区域
+        row2 = ttk.Frame(main_frame, style='Card.TFrame')
+        row2.pack(fill=tk.X, pady=5)
+        ttk.Label(row2, text="待匹配表格：", style='Card.TLabel', width=12).pack(side=tk.LEFT)
+        self.match_target_path = tk.StringVar()
+        e2 = tk.Entry(row2, textvariable=self.match_target_path, width=55, font=('微软雅黑', 9), relief='solid', bd=1)
+        e2.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+        e2.bind('<Double-Button-1>', lambda e: self.paste_path(self.match_target_path))
+        self.make_draggable(e2, self.match_target_path, 'file', '表格')
+        ttk.Button(row2, text="选择", command=lambda: self.select_match_file('target'), style='Secondary.TButton').pack(side=tk.LEFT, padx=2)
+        ttk.Button(row2, text="读取表头", command=lambda: self.read_match_headers('target'), style='Primary.TButton').pack(side=tk.LEFT, padx=2)
+        self.target_header_label = ttk.Label(row2, text="未读取", style='Hint.TLabel')
+        self.target_header_label.pack(side=tk.LEFT, padx=10)
+
+        # 关联键选择区域
+        key_frame = ttk.LabelFrame(main_frame, text="关联键设置", padding="10", style='Card.TLabelframe')
+        key_frame.pack(fill=tk.X, pady=5)
+
+        key_row = ttk.Frame(key_frame, style='Card.TFrame')
+        key_row.pack(fill=tk.X)
+        ttk.Label(key_row, text="原始表关联键：", style='Card.TLabel').pack(side=tk.LEFT)
+        self.source_key_var = tk.StringVar()
+        self.source_key_combo = ttk.Combobox(key_row, textvariable=self.source_key_var, state='readonly', width=25)
+        self.source_key_combo.pack(side=tk.LEFT, padx=5)
+
+        ttk.Label(key_row, text="待匹配表关联键：", style='Card.TLabel').pack(side=tk.LEFT, padx=(20, 0))
+        self.target_key_var = tk.StringVar()
+        self.target_key_combo = ttk.Combobox(key_row, textvariable=self.target_key_var, state='readonly', width=25)
+        self.target_key_combo.pack(side=tk.LEFT, padx=5)
+
+        # 带出字段勾选区域
+        field_frame = ttk.LabelFrame(main_frame, text="选择需要带出的字段", padding="10", style='Card.TLabelframe')
+        field_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+
+        # 使用滚动区域放置复选框
+        self.field_canvas = tk.Canvas(field_frame, bg='#ffffff', highlightthickness=0)
+        field_scrollbar = ttk.Scrollbar(field_frame, orient='vertical', command=self.field_canvas.yview)
+        self.field_inner = ttk.Frame(self.field_canvas, style='Card.TFrame')
+        self.field_inner.bind('<Configure>', lambda e: self.field_canvas.configure(scrollregion=self.field_canvas.bbox('all')))
+        self.field_canvas.create_window((0, 0), window=self.field_inner, anchor='nw')
+        self.field_canvas.configure(yscrollcommand=field_scrollbar.set)
+        self.field_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        field_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.field_check_vars = {}  # 存储字段复选框变量
+        self.source_headers = []     # 原始表头列表
+        self.target_headers = []     # 待匹配表头列表
+        self.match_hint_label = ttk.Label(self.field_inner, text="请先读取原始表格表头", style='Hint.TLabel')
+        self.match_hint_label.pack(anchor='w')
+
+        # 操作按钮区域
+        btn_frame = ttk.Frame(main_frame, style='Card.TFrame')
+        btn_frame.pack(fill=tk.X, pady=10)
+        ttk.Button(btn_frame, text="✅ 执行匹配", command=self.execute_table_match, style='Success.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="🗑️ 清空", command=self.clear_table_match, style='Danger.TButton').pack(side=tk.LEFT, padx=5)
+
+        # 日志区域
+        log_frame = ttk.LabelFrame(main_frame, text="操作日志", padding="10", style='Card.TLabelframe')
+        log_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+        self.log_text5 = ScrolledText(log_frame, height=8, font=('Consolas', 9), bg='#fafafa', relief='flat', bd=0)
+        self.log_text5.pack(fill=tk.BOTH, expand=True)
+
+    def log5(self, msg):
+        self.log_text5.insert(tk.END, msg + "\n")
+        self.log_text5.see(tk.END)
+
+    def select_match_file(self, which):
+        """选择表格文件"""
+        file = filedialog.askopenfilename(
+            title="选择表格文件",
+            filetypes=[("Excel文件", "*.xlsx;*.xls"), ("CSV文件", "*.csv"), ("所有文件", "*.*")])
+        if file:
+            if which == 'source':
+                self.match_source_path.set(file)
+            else:
+                self.match_target_path.set(file)
+
+    def _read_table_headers(self, file_path):
+        """读取表格表头，自动识别表头行（支持xlsx/xls/csv）"""
+        if not file_path or not os.path.isfile(file_path):
+            return None
+
+        try:
+            if file_path.lower().endswith('.csv'):
+                import csv
+                encodings = ['utf-8', 'gbk', 'gb18030', 'utf-8-sig']
+                for encoding in encodings:
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as f:
+                            # 只读前10行用于识别表头，加速读取
+                            rows = []
+                            for i, row in enumerate(csv.reader(f)):
+                                rows.append(row)
+                                if i >= 10:
+                                    break
+                        # 自动识别表头行
+                        for row_idx, row in enumerate(rows):
+                            non_empty = [str(c).strip() for c in row if str(c).strip()]
+                            if len(non_empty) >= 2:
+                                return [str(c).strip() for c in row], row_idx
+                        return None
+                    except:
+                        continue
+                return None
+            else:
+                # 使用 read_only 模式加速读取，只读前几行
+                wb = load_workbook(file_path, read_only=True, data_only=True)
+                ws = wb.active
+                rows_iter = ws.iter_rows(min_row=1, max_row=5, values_only=True)
+                for row_idx, row_values in enumerate(rows_iter, 1):
+                    non_empty = [str(c).strip() for c in row_values if c is not None and str(c).strip()]
+                    if len(non_empty) >= 2:
+                        headers = [str(c).strip() if c is not None else '' for c in row_values]
+                        wb.close()
+                        return headers, row_idx - 1
+                wb.close()
+                return None
+        except Exception as e:
+            messagebox.showerror("错误", f"读取文件失败：{e}")
+            return None
+
+    def read_match_headers(self, which):
+        """读取表头并更新下拉框"""
+        if which == 'source':
+            file_path = self.match_source_path.get()
+            if not file_path:
+                messagebox.showwarning("提示", "请先选择原始表格")
+                return
+            result = self._read_table_headers(file_path)
+            if result is None:
+                messagebox.showwarning("提示", "无法读取表头")
+                return
+            headers, header_row = result
+            self.source_headers = headers
+            self.source_key_combo['values'] = headers
+            if headers:
+                self.source_key_combo.current(0)
+            self.source_header_label.config(text=f"表头在第{header_row + 1}行，共{len(headers)}列", style='Success.TLabel')
+            self.log5(f"原始表格表头（第{header_row + 1}行）：{', '.join(headers)}")
+            # 更新字段勾选区
+            self._update_field_checkboxes()
+        else:
+            file_path = self.match_target_path.get()
+            if not file_path:
+                messagebox.showwarning("提示", "请先选择待匹配表格")
+                return
+            result = self._read_table_headers(file_path)
+            if result is None:
+                messagebox.showwarning("提示", "无法读取表头")
+                return
+            headers, header_row = result
+            self.target_headers = headers
+            self.target_key_combo['values'] = headers
+            if headers:
+                self.target_key_combo.current(0)
+            self.target_header_label.config(text=f"表头在第{header_row + 1}行，共{len(headers)}列", style='Success.TLabel')
+            self.log5(f"待匹配表格表头（第{header_row + 1}行）：{', '.join(headers)}")
+
+    def _update_field_checkboxes(self):
+        """更新字段勾选复选框"""
+        # 清空现有复选框
+        for widget in self.field_inner.winfo_children():
+            widget.destroy()
+
+        self.field_check_vars = {}
+
+        if not self.source_headers:
+            self.match_hint_label = ttk.Label(self.field_inner, text="请先读取原始表格表头", style='Hint.TLabel')
+            self.match_hint_label.pack(anchor='w')
+            return
+
+        ttk.Label(self.field_inner, text="勾选需要从原始表格带出到待匹配表格的字段：", style='Card.TLabel').pack(anchor='w', pady=(0, 5))
+
+        # 每行放4个复选框
+        cols = 4
+        row_frame = None
+        for i, header in enumerate(self.source_headers):
+            if i % cols == 0:
+                row_frame = ttk.Frame(self.field_inner, style='Card.TFrame')
+                row_frame.pack(fill=tk.X, pady=2)
+            var = tk.BooleanVar(value=False)
+            self.field_check_vars[header] = var
+            cb = tk.Checkbutton(row_frame, text=header, variable=var,
+                                bg='#ffffff', font=('微软雅黑', 9),
+                                activebackground='#ffffff')
+            cb.pack(side=tk.LEFT, padx=10)
+
+    def execute_table_match(self):
+        """执行表格匹配，生成新工作簿（不修改原文件）"""
+        source_path = self.match_source_path.get()
+        target_path = self.match_target_path.get()
+
+        if not source_path or not os.path.isfile(source_path):
+            messagebox.showwarning("提示", "请先选择原始表格")
+            return
+        if not target_path or not os.path.isfile(target_path):
+            messagebox.showwarning("提示", "请先选择待匹配表格")
+            return
+
+        source_key = self.source_key_var.get()
+        target_key = self.target_key_var.get()
+
+        if not source_key:
+            messagebox.showwarning("提示", "请选择原始表关联键")
+            return
+        if not target_key:
+            messagebox.showwarning("提示", "请选择待匹配表关联键")
+            return
+
+        # 获取勾选的带出字段
+        selected_fields = [h for h, v in self.field_check_vars.items() if v.get()]
+        if not selected_fields:
+            messagebox.showwarning("提示", "请至少勾选一个需要带出的字段")
+            return
+
+        # 选择保存路径
+        save_path = filedialog.asksaveasfilename(
+            title="保存匹配结果", defaultextension=".xlsx",
+            filetypes=[("Excel", "*.xlsx")], initialfile="表格匹配结果.xlsx")
+        if not save_path:
+            return
+
+        self.log5(f"\n开始匹配...")
+        self.log5(f"原始表格：{source_path}")
+        self.log5(f"待匹配表格：{target_path}")
+        self.log5(f"关联键：{source_key} ↔ {target_key}")
+        self.log5(f"带出字段：{', '.join(selected_fields)}")
+
+        try:
+            # 读取原始表格数据，构建关联键映射
+            source_data = self._read_table_data(source_path, source_key, selected_fields)
+            if not source_data:
+                messagebox.showwarning("提示", "原始表格无有效数据")
+                return
+
+            self.log5(f"原始表格读取 {len(source_data)} 条记录")
+
+            # 生成新工作簿：复制原始表、待匹配表，并生成匹配结果表
+            matched_count = self._generate_match_result(
+                source_path, target_path, save_path,
+                target_key, selected_fields, source_data)
+
+            self.log5(f"匹配完成，共匹配 {matched_count} 条")
+            self.log5(f"结果已保存至：{save_path}")
+            messagebox.showinfo("完成",
+                f"匹配完成\n共匹配 {matched_count} 条\n\n"
+                f"结果文件包含2个工作表：\n"
+                f"1. 原始表格\n2. 匹配结果\n\n"
+                f"文件：{save_path}")
+
+        except Exception as e:
+            messagebox.showerror("错误", str(e))
+            self.log5(f"错误：{e}")
+
+    def _read_table_data(self, file_path, key_field, selected_fields):
+        """读取表格数据，返回 {关联键值: {字段: 值}} 字典"""
+        result = {}
+
+        if file_path.lower().endswith('.csv'):
+            import csv
+            encodings = ['utf-8', 'gbk', 'gb18030', 'utf-8-sig']
+            rows = None
+            for encoding in encodings:
+                try:
+                    with open(file_path, 'r', encoding=encoding) as f:
+                        reader = csv.reader(f)
+                        rows = list(reader)
+                    break
+                except:
+                    continue
+            if rows is None:
+                return result
+
+            # 找表头行
+            header_row_idx = 0
+            for row_idx, row in enumerate(rows):
+                non_empty = [str(c).strip() for c in row if str(c).strip()]
+                if len(non_empty) >= 2:
+                    header_row_idx = row_idx
+                    break
+
+            headers = [str(c).strip() for c in rows[header_row_idx]]
+            key_col = None
+            field_cols = {}
+            for ci, h in enumerate(headers):
+                if h == key_field:
+                    key_col = ci
+                if h in selected_fields:
+                    field_cols[h] = ci
+
+            if key_col is None:
+                return result
+
+            for row in rows[header_row_idx + 1:]:
+                if len(row) <= key_col:
+                    continue
+                key_val = str(row[key_col]).strip() if row[key_col] else ''
+                if not key_val:
+                    continue
+                record = {}
+                for field, col in field_cols.items():
+                    record[field] = str(row[col]).strip() if col < len(row) and row[col] else ''
+                result[key_val] = record
+        else:
+            wb = load_workbook(file_path, data_only=True)
+            ws = wb.active
+
+            # 找表头行
+            header_row = 1
+            for row_idx in range(1, min(ws.max_row + 1, 6)):
+                row_values = [ws.cell(row=row_idx, column=c).value for c in range(1, ws.max_column + 1)]
+                non_empty = [str(c).strip() for c in row_values if c is not None and str(c).strip()]
+                if len(non_empty) >= 2:
+                    header_row = row_idx
+                    break
+
+            headers = []
+            for c in range(1, ws.max_column + 1):
+                val = ws.cell(row=header_row, column=c).value
+                headers.append(str(val).strip() if val else '')
+
+            key_col = None
+            field_cols = {}
+            for ci, h in enumerate(headers):
+                if h == key_field:
+                    key_col = ci + 1
+                if h in selected_fields:
+                    field_cols[h] = ci + 1
+
+            if key_col is None:
+                wb.close()
+                return result
+
+            for r in range(header_row + 1, ws.max_row + 1):
+                key_val = ws.cell(row=r, column=key_col).value
+                key_val = str(key_val).strip() if key_val else ''
+                if not key_val:
+                    continue
+                record = {}
+                for field, col in field_cols.items():
+                    val = ws.cell(row=r, column=col).value
+                    record[field] = str(val).strip() if val else ''
+                result[key_val] = record
+
+            wb.close()
+
+        return result
+
+    def _read_table_all_rows(self, file_path):
+        """读取表格所有行数据，返回 (表头行索引, 表头列表, 数据行列表)"""
+        if file_path.lower().endswith('.csv'):
+            import csv
+            encodings = ['utf-8', 'gbk', 'gb18030', 'utf-8-sig']
+            for encoding in encodings:
+                try:
+                    with open(file_path, 'r', encoding=encoding) as f:
+                        rows = list(csv.reader(f))
+                    break
+                except:
+                    continue
+            else:
+                return None
+
+            # 找表头行
+            header_row_idx = 0
+            for row_idx, row in enumerate(rows):
+                non_empty = [str(c).strip() for c in row if str(c).strip()]
+                if len(non_empty) >= 2:
+                    header_row_idx = row_idx
+                    break
+            headers = [str(c).strip() for c in rows[header_row_idx]]
+            data_rows = rows[header_row_idx + 1:]
+            return header_row_idx, headers, data_rows
+        else:
+            wb = load_workbook(file_path, read_only=True, data_only=True)
+            ws = wb.active
+            all_rows = list(ws.iter_rows(values_only=True))
+            wb.close()
+
+            if not all_rows:
+                return None
+
+            # 找表头行
+            header_row_idx = 0
+            for row_idx, row in enumerate(all_rows):
+                non_empty = [str(c).strip() for c in row if c is not None and str(c).strip()]
+                if len(non_empty) >= 2:
+                    header_row_idx = row_idx
+                    break
+
+            headers = [str(c).strip() if c is not None else '' for c in all_rows[header_row_idx]]
+            data_rows = []
+            for row in all_rows[header_row_idx + 1:]:
+                data_rows.append([str(c).strip() if c is not None else '' for c in row])
+            return header_row_idx, headers, data_rows
+
+    def _generate_match_result(self, source_path, target_path, save_path,
+                                target_key, selected_fields, source_data):
+        """生成新工作簿：原始表格 + 匹配结果，返回匹配数量"""
+        # 读取原始表格所有行
+        src_result = self._read_table_all_rows(source_path)
+        # 读取待匹配表格所有行
+        tgt_result = self._read_table_all_rows(target_path)
+
+        if not src_result or not tgt_result:
+            return 0
+
+        _, src_headers, src_data_rows = src_result
+        _, tgt_headers, tgt_data_rows = tgt_result
+
+        # 找到待匹配表的关联键列索引
+        key_col_idx = None
+        for ci, h in enumerate(tgt_headers):
+            if h == target_key:
+                key_col_idx = ci
+                break
+
+        if key_col_idx is None:
+            return 0
+
+        # 构建匹配结果：待匹配表头 + 带出字段（新增的列）
+        result_headers = list(tgt_headers)
+        field_col_map = {}  # 字段 -> 结果表中的列索引
+        for field in selected_fields:
+            if field in result_headers:
+                field_col_map[field] = result_headers.index(field)
+            else:
+                result_headers.append(field)
+                field_col_map[field] = len(result_headers) - 1
+
+        # 匹配并填充
+        matched = 0
+        result_rows = []
+        for row in tgt_data_rows:
+            # 复制行数据
+            new_row = list(row)
+            # 补齐列数
+            while len(new_row) < len(result_headers):
+                new_row.append('')
+
+            # 获取关联键值
+            key_val = str(row[key_col_idx]).strip() if key_col_idx < len(row) and row[key_col_idx] else ''
+            if key_val and key_val in source_data:
+                matched += 1
+                for field in selected_fields:
+                    new_row[field_col_map[field]] = source_data[key_val].get(field, '')
+
+            result_rows.append(new_row)
+
+        # 创建新工作簿
+        wb = Workbook()
+
+        # 工作表1：原始表格
+        ws1 = wb.active
+        ws1.title = "原始表格"
+        ws1.append(src_headers)
+        for row in src_data_rows:
+            ws1.append(row)
+
+        # 工作表2：匹配结果
+        ws2 = wb.create_sheet(title="匹配结果")
+        ws2.append(result_headers)
+        for row in result_rows:
+            ws2.append(row)
+
+        # 设置列宽（简单自适应）
+        for ws in [ws1, ws2]:
+            for col_idx, header in enumerate(ws[1], 1):
+                if header.value:
+                    ws.column_dimensions[header.column_letter].width = min(max(len(str(header.value)) * 2, 12), 40)
+
+        wb.save(save_path)
+        wb.close()
+
+        return matched
+
+    def clear_table_match(self):
+        """清空表格匹配区域"""
+        self.match_source_path.set('')
+        self.match_target_path.set('')
+        self.source_headers = []
+        self.target_headers = []
+        self.source_key_combo['values'] = []
+        self.target_key_combo['values'] = []
+        self.source_key_var.set('')
+        self.target_key_var.set('')
+        self.source_header_label.config(text="未读取", style='Hint.TLabel')
+        self.target_header_label.config(text="未读取", style='Hint.TLabel')
+        self._update_field_checkboxes()
+        self.log_text5.delete("1.0", tk.END)
 
 
 import sys
